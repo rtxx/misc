@@ -1,0 +1,63 @@
+#!/bin/bash
+# get the name of the script from its file name
+scriptName=$(basename $0)
+#https://stackoverflow.com/a/246128
+scriptDir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+themesDir=$scriptDir/themes
+
+# sets the xsettingsd and qt5ct file paths
+xsettingsdConfigFile=~/.xsettingsd
+qtConfigFile=~/.config/qt5ct/qt5ct.conf
+
+# sets GTK config files that lxappearance uses
+gtk3ConfigFile=~/.config/gtk-3.0/settings.ini
+gtk2ConfigFile=~/.gtkrc-2.0
+
+# using jq to get the info we need
+# getting JSON file contents to var
+themeJSON=$(cat $themesDir/$1/theme.config)
+
+# GTK values from JSON
+gtkThemeName=$( echo $themeJSON | jq -r '.gtk["gtk-theme-name"]' )
+gtkThemeNameQ='"'$gtkThemeName'"' # added quotation marks
+gtkIconName=$( echo $themeJSON | jq -r '.gtk["gtk-icon-theme-name"]' )
+gtkIconNameQ='"'$gtkIconName'"' # added quotation marks
+gtkCursorName=$( echo $themeJSON | jq -r '.gtk["gtk-cursor-theme-name"]' )
+gtkCursorNameQ='"'$gtkCursorName'"' # added quotation marks
+gtkCursorSize=$( echo $themeJSON | jq -r '.gtk["gtk-cursor-theme-size"]' )
+gtkFontName=$( echo $themeJSON | jq -r '.gtk["gtk-font-name"]' )
+
+# Qt values from JSON
+qtThemeName=$( echo $themeJSON | jq -r '.qt["style"]' )
+qtColorSchemeName=$( echo $themeJSON | jq -r '.qt["color_scheme_path"]' )
+qtIconThemeName=$( echo $themeJSON | jq -r '.qt["icon_theme"]' )
+
+# GTK theme updating section
+# xsettingsd section
+sed -i '/Net\/ThemeName/cNet\/ThemeName '$gtkThemeNameQ'' $xsettingsdConfigFile
+sed -i '/Net\/IconThemeName/cNet\/IconThemeName '$gtkIconNameQ'' $xsettingsdConfigFile
+sed -i '/Gtk\/CursorThemeName/cGtk\/CursorThemeName '$gtkCursorNameQ'' $xsettingsdConfigFile
+
+# gtk 2.0 section
+sed -i '/gtk-theme-name/cgtk-theme-name='"$gtkThemeName"'' $gtk2ConfigFile
+sed -i '/gtk-icon-theme-name/cgtk-icon-theme-name='"$gtkIconName"'' $gtk2ConfigFile
+sed -i '/gtk-font-name/cgtk-font-name='"$gtkFontName"'' $gtk2ConfigFile
+sed -i '/gtk-cursor-theme-name/cgtk-cursor-theme-name='"$gtkCursorName"'' $gtk2ConfigFile
+sed -i '/gtk-cursor-theme-size/cgtk-cursor-theme-size='"$gtkCursorSize"'' $gtk2ConfigFile
+
+# gtk 3.0 section
+sed -i '/gtk-theme-name/cgtk-theme-name='"$gtkThemeName"'' $gtk3ConfigFile
+sed -i '/gtk-icon-theme-name/cgtk-icon-theme-name='"$gtkIconName"'' $gtk3ConfigFile
+sed -i '/gtk-font-name/cgtk-font-name='"$gtkFontName"'' $gtk3ConfigFile
+sed -i '/gtk-cursor-theme-name/cgtk-cursor-theme-name='"$gtkCursorName"'' $gtk3ConfigFile
+sed -i '/gtk-cursor-theme-size/cgtk-cursor-theme-size='"$gtkCursorSize"'' $gtk3ConfigFile
+
+# on the fly theme change for GTK apps, reloading xsettingsd
+killall -HUP xsettingsd
+
+ # Qt theme updating section
+sed -i '/color_scheme_path/ccolor_scheme_path='"$qtColorSchemeName"'' $qtConfigFile
+sed -i '/style/cstyle='"$qtThemeName"'' $qtConfigFile
+sed -i '/icon_theme/cicon_theme='"$qtIconThemeName"'' $qtConfigFile
+
+exit
