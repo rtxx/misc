@@ -1,58 +1,66 @@
+# Getting your i3 with ‘togglable’ light and dark themes
+
 So you have a lean, mean machine with i3 installed and, like me, you like to use a light and dark theme and noticed that when using, for example, Firefox, some websites have a dark mode but won’t change it automatically. If this bothers you then come along. Onwards!
 
 For this tutorial, I’m using Arch Linux BTW™ with i3 installed with no DM, but I’m sure you can apply it to other WM’s.
 
 We are going to need a few packages:
 
-    xsettingsd – Lightweight xsettings daemon
-    lxappearance-gtk3 – GTK+ theme switcher
-    qt5ct-kde – Qt5 configuration utility
-    breeze-gtk – GTK theme with light and dark colors, you can use others to your liking.
-    breeze – Qt theme with light and dark colors, but it’s a bit ‘heavy’, use another if you like. breeze has the benefit of having a GTK and Qt themes, hurray for consistency!
-    papirus-icon-theme – Pretty on the eyes icon theme
-    capitaine-cursors – Stylish cursor theme
-    noto-fonts – Good looking fonts from Google
-    jq – JSON parser
+* **xsettingsd** – Lightweight xsettings daemon
+* **lxappearance-gtk3** – GTK+ theme switcher
+* **qt5ct-kde** – Qt5 configuration utility
+* **breeze-gtk** – GTK theme with light and dark colors, you can use others to your liking.
+* **breeze** – Qt theme with light and dark colors, but it’s a bit ‘heavy’, use another if you like. breeze has the benefit of having a GTK and Qt themes, hurray for consistency!
+* **papirus-icon-theme** – Pretty on the eyes icon theme
+* **capitaine-cursors** – Stylish cursor theme
+* **noto-fonts** – Good looking fonts from Google
+* **jq** – JSON parser
 
+[IMAGE]
 The finished script
-Getting GTK to work
+# Getting GTK to work
 
 Let’s start with GTK applications. xsettingsd will help us do this. For more info on what it does check this, this, and this. Let’s config it.
 
-Start xsettingsd. Create a new file on your home folder and name it .xsettingsd. Open it and write:
+Start ```xsettingsd```. Create a new file on your home folder and name it **.xsettingsd**. Open it and write:
 
-Net/ThemeName "Breeze"
+**Net/ThemeName "Breeze"**
 
-Save it. To reload it use killall -HUP xsettingsd. This tells xsettingsd to read and reload according to the file we just created. So to change to another theme, open it and change Net/ThemeName to the theme you want, in this case, Breeze-Dark
+Save it. To reload it use ```killall -HUP xsettingsd```. This tells ```xsettingsd``` to read and reload according to the file we just created. So to change to another theme, open it and change **Net/ThemeName** to the theme you want, in this case, Breeze-Dark
 
-Net/ThemeName "Breeze-Dark"
+**Net/ThemeName "Breeze-Dark"**
 
-Save it and run again killall -HUP xsettingsd. The GTK theme will change, and all the open GTK applications will follow. Nice! But this is very annoying if you want to change it so often. To ease our life, we can change it with sed:
-
+Save it and run again ```killall -HUP xsettingsd```. The GTK theme will change, and all the open GTK applications will follow. Nice! But this is very annoying if you want to change it so often. To ease our life, we can change it with sed:
+```
 sed -i '/Net\/ThemeName/cNet\/ThemeName 'Breeze'' ~/.xsettingsd
-
+```
 So we can make something like
-
+```
 #!/bin/bash
 sed -i '/Net\/ThemeName/cNet\/ThemeName '$1'' ~/.xsettingsd
 killall -HUP xsettingsd
+```
+Save it as i3theme on ~ (for example) and run it:
 
-Save it as i3theme on ~ (for example) and run it
-
-# light theme
+For light theme:
+```
 bash ~/i3theme \"Breeze\"
-# dark theme
+```
+For dark theme:
+```
 bash ~/i3theme \"Breeze-Dark\"
+```
 
-or create an i3 hotkey like this
-
+or create an i3 hotkey like this:
+```
 bindsym $mod+F1 exec bash ~/i3theme '"Breeze"'
 bindsym $mod+Shift+F1 exec bash ~/i3theme '"Breeze-Dark"'
-
+```
 Tada! Now we have a semi-automatic, semi ‘togglable’ way of changing our GTK theme.
 
 How about Qt apps? And apps like xterm that use Xresources? Or dunst (notification manager)? Or i3 / i3status colors? What about other stuff like icons and cursors? Yes, that’s quite a lot of stuff that needs changing. But the good news is where there’s a will there’s a way.
-Getting Qt to work
+
+# Getting Qt to work
 
 To change Qt theme, we can use qt5ct. But the problem is that the version on Arch official repositories can’t change the color scheme. AUR to the rescue then! There is a package on AUR called qt5ct-kde that has the functionality that we need. Sweet! Now, all we have to do is config it to our liking.
 
