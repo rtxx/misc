@@ -314,7 +314,7 @@ breeze-dark – theme.config
 ```
 And that’s it, folks! We have a functional script that helps us change our theme.
 
-For extra darkmodness install this extension: [Dark Reader](https://darkreader.org/).  After, click on the 3 little dots and click on **“Use system color scheme”**. Now even if a website doesn’t have a dark mode, we can use the Dark Reader version. Neot-o!
+For extra ***darkmodness*** install this extension: [Dark Reader](https://darkreader.org/).  After, click on the 3 little dots and click on **“Use system color scheme”**. Now even if a website doesn’t have a dark mode, we can use the Dark Reader version. Neot-o!
 
 But it’s not the end. What about if we change to a theme that’s not installed? What about if our JSON file is not properly formatted or is empty? What about ```i3``` or ```Xresources``` colors? What about making a simple tray icon that we can easily switch from light and dark themes? So much to do… Awesome! It’s always good to have something to look forward to or improve. But it’s a story for another time. Stay tuned for a part 2 maybe even a part 3.
 
