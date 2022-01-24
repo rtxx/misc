@@ -63,7 +63,7 @@ How about Qt apps? And apps like ```xterm``` that use Xresources? Or ```dunst```
 
 To change Qt theme, we can use ```qt5ct```. But the problem is that the version on Arch official repositories can’t change the color scheme. AUR to the rescue then! There is a package on AUR called ```qt5ct-kde``` that has the functionality that we need. Sweet! Now, all we have to do is config it to our liking.
 
-Let’s begin by enabling ```qt5ct```. Open ```/etc/environment``` in your favorite text editor (don’t forget you need sudo / doas) and type:
+Let’s begin by enabling ```qt5ct```. Open ```/etc/environment``` in your favorite text editor (don’t forget you need ```sudo``` / ```doas```) and type:
 ```
 QT_QPA_PLATFORMTHEME=qt5ct
 ```
