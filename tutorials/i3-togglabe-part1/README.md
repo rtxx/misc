@@ -15,8 +15,8 @@ We are going to need a few packages:
 * **noto-fonts** – Good looking fonts from Google
 * **jq** – JSON parser
 
-[IMAGE]
-The finished script
+![image](https://ruitx.net/wp-content/uploads/2022/01/i3theme.gif)
+>The finished script
 # Getting GTK to work
 
 Let’s start with GTK applications. ```xsettingsd``` will help us do this. For more info on what it does check this, this, and this. Let’s config it. [needs url's]
