@@ -4,7 +4,8 @@ Welcome, one and all! Sit in your cozy place and bring your snacks, it's learnin
 
 On our latest installment, we started working on our script, to automagicaly change our themes. Now we are going to improving it, by adding a bunch of new programs, more functionality and error proofing but try to stay simple along the way. The goal is to have a simple script that we can change easly and adapt it to our liking.
 
-The script working
+![](i3theme-part2.gif)
+>The script working
 
 Let's get ready to ruuuumble...
 
