@@ -1,3 +1,6 @@
+# Here be dragons!
+> Im still working on this tutorial, so ***everything*** here is not final.
+
 # Getting your i3 with ‘togglable’ light and dark themes 2 : The Revengeance
 
 Welcome, one and all! Sit in your cozy place and bring your snacks, it's learning time!
