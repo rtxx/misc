@@ -1,0 +1,371 @@
+#!/bin/bash
+# get the name of the script from its file name
+scriptName=$(basename $0)
+#https://stackoverflow.com/a/246128
+scriptDir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+themesDir=$scriptDir/themes
+
+# sets gendust file path
+gendunstFile=$scriptDir/gendunst
+
+# sets the xsettingsd and qt5ct file paths
+xsettingsdConfigFile=~/.xsettingsd
+qtConfigFile=~/.config/qt5ct/qt5ct.conf
+
+# sets GTK config files that lxappearance uses
+gtk3ConfigFile=~/.config/gtk-3.0/settings.ini
+gtk2ConfigFile=~/.gtkrc-2.0
+
+# sets i3wm file paths
+i3wmConfigDir=~/.config/i3
+i3wmConfigFile=$i3wmConfigDir/config
+i3wmMainConfigFile=$i3wmConfigDir/config.d/main.conf
+i3wmThemeConfigFile=$i3wmConfigDir/config.d/theme.conf
+
+# sets i3status file paths
+i3statusConfigDir=~/.config/i3status
+i3statusConfigFile=$i3statusConfigDir/config
+i3statusMainConfigFile=$i3statusConfigDir/config.d/main.conf
+i3statusThemeConfigFile=$i3statusConfigDir/config.d/theme.conf
+
+# sets kitty config file paths
+kittyConfigFile=~/.config/kitty.conf
+kittyThemeFile=~/.config/kitty/theme.conf
+
+# sets xresources theme file
+xresourcesThemeFile=~/.Xresources.d/theme.Xresources
+
+# check if dependencies are met
+dependencies=("xsettingsd" "jq" "feh")
+for pkg in ${dependencies[@]}; do
+  checkDependency=$(pacman -Q $pkg)
+  exitStatus=$?
+  if [ "$exitStatus" -eq 1 ]; then
+    echo [Error] dependency not installed, please install $pkg
+    exit 2
+  fi
+done
+
+function printHelp {
+cat << EOF
+
+Change i3 theme.
+
+Usage: $scriptName -options [theme]
+
+options
+  -l, --list    list available themes
+  -a, --apply   apply [theme]
+
+EOF
+}
+
+# prints help if no argument is present
+if [[ $# -eq 0 ]]; then
+  printHelp
+  exit 0
+fi
+
+#loops the argument string until is done
+while [[ $# -gt 0 ]]; do
+  key="$1"
+  case "$key" in
+    -h|--help) printHelp=1 ;;
+    -l|--list) listThemesF=1 ;;
+    -a|--apply) shift; applyTheme="$1" ; applyThemeF=1 ;;
+    *) echo "Unknown option: '$key' (use -h for help)" ; exit 2 ;;
+  esac
+  shift
+done
+
+# if help flag is true
+if [ "$printHelp" ]; then
+  printHelp
+  exit 0
+fi
+
+# checks if JSON files is valid
+# empty files will NOT error out
+function verifyJSON() {
+  if jq empty "$1" 2>/dev/null; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# list all the themes avaiable
+if [ "$listThemesF" ]; then
+  echo "Themes available:"
+  #checks for theme.config within themes folder
+  for currentThemeDir in $themesDir/*
+  do
+    # checks if theme.config file exist and verifies if its a valid JSON file
+    if [[ -e $currentThemeDir/theme.config ]]; then
+      if verifyJSON "$currentThemeDir/theme.config"; then
+        echo "--> $(basename $currentThemeDir)"
+      else
+        echo "--> Invalid JSON: $(basename $currentThemeDir)"
+      fi
+    fi
+  done
+  exit 0
+fi
+
+if [ "$applyThemeF" ]; then
+  echo "Applying theme: " $applyTheme
+
+  # checking if JSON is valid
+  if ! verifyJSON "$themesDir/$applyTheme/theme.config"; then
+    echo "[ERROR] Invalid JSON: $applyTheme"
+    exit 2
+  fi
+
+  # using jq to get the info we need
+  # getting JSON file contents to var
+  themeJSON=$(cat $themesDir/$applyTheme/theme.config)
+
+  # GTK values from JSON
+  gtkThemeName=$( echo $themeJSON | jq -r '.gtk["gtk-theme-name"]' )
+  gtkThemeNameQ='"'$gtkThemeName'"' # added quotation marks
+  gtkIconName=$( echo $themeJSON | jq -r '.gtk["gtk-icon-theme-name"]' )
+  gtkIconNameQ='"'$gtkIconName'"' # added quotation marks
+  gtkCursorName=$( echo $themeJSON | jq -r '.gtk["gtk-cursor-theme-name"]' )
+  gtkCursorNameQ='"'$gtkCursorName'"' # added quotation marks
+  gtkCursorSize=$( echo $themeJSON | jq -r '.gtk["gtk-cursor-theme-size"]' )
+  gtkFontName=$( echo $themeJSON | jq -r '.gtk["gtk-font-name"]' )
+
+  # Qt values from JSON
+  qtThemeName=$( echo $themeJSON | jq -r '.qt["style"]' )
+  qtColorSchemeName=$( echo $themeJSON | jq -r '.qt["color_scheme_path"]' )
+  qtIconThemeName=$( echo $themeJSON | jq -r '.qt["icon_theme"]' )
+
+  # i3wm theme value from JSON
+  i3wmThemeName=$( echo $themeJSON | jq -r '.i3wm["i3wm-theme"]' )
+
+  # i3status theme value from JSON
+  i3statusThemeName=$( echo $themeJSON | jq -r '.i3status["i3status-theme"]' )
+
+  # dunst theme value from JSON
+  dunstThemeName=$( echo $themeJSON | jq -r '.dunst["dunst-theme"]' )
+
+  # kitty theme value from JSON
+  kittyTheme=$( echo $themeJSON | jq -r '.["kitty"]' )
+
+  # xresources value from JSON
+  xresourcesTheme=$( echo $themeJSON | jq -r '.["xresources"]' )
+
+  # wallpaper value from JSON
+  wallpapperTheme=$( echo $themeJSON | jq -r '.["wallpaper"]' )
+
+  ### GTK updating section
+
+  # GTK theme section
+  # check if JSON values are not empty
+  if [ "$gtkThemeName" ]; then
+    # xsettingsd
+    sed -i '/Net\/ThemeName/cNet\/ThemeName '$gtkThemeNameQ'' $xsettingsdConfigFile
+    # gtk 2.0
+    sed -i '/gtk-theme-name/cgtk-theme-name='"$gtkThemeName"'' $gtk2ConfigFile
+    # gtk 3.0
+    sed -i '/gtk-theme-name/cgtk-theme-name='"$gtkThemeName"'' $gtk3ConfigFile
+  else
+    echo "[Warning] GTK theme value is empty, ignoring..."
+  fi
+
+  # GTK icon theme section
+  if [ "$gtkIconName" ]; then
+    # xsettingsd
+    sed -i '/Net\/IconThemeName/cNet\/IconThemeName '$gtkIconNameQ'' $xsettingsdConfigFile
+    # gtk 2.0
+    sed -i '/gtk-icon-theme-name/cgtk-icon-theme-name='"$gtkIconName"'' $gtk2ConfigFile
+    # gtk 3.0
+    sed -i '/gtk-icon-theme-name/cgtk-icon-theme-name='"$gtkIconName"'' $gtk3ConfigFile
+  else
+    echo "[Warning] GTK icon theme value is empty, ignoring..."
+  fi
+
+  # GTK cursor theme section
+  if [[ "$gtkCursorName" || "$gtkCursorSize" ]]; then
+    # xsettingsd
+    sed -i '/Gtk\/CursorThemeName/cGtk\/CursorThemeName '$gtkCursorNameQ'' $xsettingsdConfigFile
+    # gtk 2.0
+    sed -i '/gtk-cursor-theme-name/cgtk-cursor-theme-name='"$gtkCursorName"'' $gtk2ConfigFile
+    sed -i '/gtk-cursor-theme-size/cgtk-cursor-theme-size='"$gtkCursorSize"'' $gtk2ConfigFile
+    # gtk 3.0
+    sed -i '/gtk-cursor-theme-name/cgtk-cursor-theme-name='"$gtkCursorName"'' $gtk3ConfigFile
+    sed -i '/gtk-cursor-theme-size/cgtk-cursor-theme-size='"$gtkCursorSize"'' $gtk3ConfigFile
+  else
+    echo "[Warning] GTK cursor theme value is empty, ignoring..."
+  fi
+
+  # GTK font section
+  if [ "$gtkFontName" ]; then
+    # gtk 2.0
+    sed -i '/gtk-font-name/cgtk-font-name='"$gtkFontName"'' $gtk2ConfigFile
+     # gtk 3.0
+    sed -i '/gtk-font-name/cgtk-font-name='"$gtkFontName"'' $gtk3ConfigFile
+  else
+    echo "[Warning] GTK font name value is empty, ignoring..."
+  fi
+
+  # on the fly theme change for GTK apps, reloading xsettingsd
+  killall -HUP xsettingsd
+
+  ### Qt updating section
+
+  # Qt theme section
+  # check if JSON values are not empty
+  if [ "$qtColorSchemeName" ]; then
+    sed -i '/color_scheme_path/ccolor_scheme_path='"$qtColorSchemeName"'' $qtConfigFile
+  else
+    echo "[Warning] Qt color scheme value is empty, ignoring..."
+  fi
+
+  if [ "$qtThemeName" ]; then
+    sed -i '/style/cstyle='"$qtThemeName"'' $qtConfigFile
+  else
+    echo "[Warning] Qt style value is empty, ignoring..."
+  fi
+
+  if [ "$qtIconThemeName" ]; then
+    sed -i '/icon_theme/cicon_theme='"$qtIconThemeName"'' $qtConfigFile
+  else
+    echo "[Warning] Qt icon theme value is empty, ignoring..."
+  fi
+
+  ### kitty updating section
+  if [ "$kittyTheme" ]; then
+    # copies kitty theme config
+    cp -f "$themesDir/$applyTheme/$kittyTheme" $kittyThemeFile
+    # on the fly reload all kitty terminals
+    killall -SIGUSR1 kitty
+  else
+    echo "[Warning] kitty value is empty, ignoring..."
+  fi
+
+  ### xresources updating section
+  if [ "$xresourcesTheme" ]; then
+    # check if file exists
+    if [[ -e "$themesDir/$applyTheme/$xresourcesTheme" ]]; then
+      cp -f "$themesDir/$applyTheme/$xresourcesTheme" $xresourcesThemeFile
+      # reload Xresources
+      xrdb ~/.Xresources
+    else
+      echo "[Warning] xresources config file does not exist, ignoring..."
+    fi
+  else
+    echo "[Warning] xresources value is empty, ignoring..."
+  fi
+
+  ### dunst updating section
+  if [[ "$dunstThemeName" ]]; then
+    if [[ "$dunstThemeName" == "auto" ]]; then
+      # if set to auto, get colors from Xresources
+      colorBG=$(xrdb -query | grep "background" | awk '{print $2}')
+      colorFG=$(xrdb -query | grep "foreground" | awk '{print $2}')
+      color01=$(xrdb -query | grep "color1:" | awk '{print $2}')
+      color08=$(xrdb -query | grep "color8:" | awk '{print $2}')
+      # kills dunst, regen the config with new colors and runs it again
+      killall dunst
+      bash $gendunstFile -fw 0 \
+                         -ulb $colorBG -ulf $color08  \
+                         -unb $colorBG -unf $colorFG \
+                         -ucb $color01 -ucf $colorFG
+      (dunst 2>/dev/null &)
+    elif [[ "$dunstThemeName" == "manual" ]]; then
+      # if set to manual, get values from JSON
+      frameColor=$( echo $themeJSON | jq -r '.dunst["frameColor"]' )
+      frameWidth=$( echo $themeJSON | jq -r '.dunst["frameWidth"]' )
+      urgencyLowBkColor=$( echo $themeJSON | jq -r '.dunst["urgencyLow-BackgroundColor"]' )
+      urgencyLowFgColor=$( echo $themeJSON | jq -r '.dunst["urgencyLow-ForegroundColor"]' )
+      urgencyNormalBkColor=$( echo $themeJSON | jq -r '.dunst["urgencyNormal-BackgroundColor"]' )
+      urgencyNormalFgColor=$( echo $themeJSON | jq -r '.dunst["urgencyNormal-ForegroundColor"]' )
+      urgencyCriticalBkColor=$( echo $themeJSON | jq -r '.dunst["urgencyCritical-BackgroundColor"]' )
+      urgencyCriticalFgColor=$( echo $themeJSON | jq -r '.dunst["urgencyCritical-ForegroundColor"]' )
+      # kills dunst, regen the config with new colors and runs it again
+      killall dunst
+      bash $gendunstFile -fc $frameColor -fw $frameWidth \
+                         -ulb $urgencyLowBkColor -ulf $urgencyLowFgColor \
+                         -unb $urgencyNormalBkColor -unf $urgencyNormalFgColor \
+                         -ucb $urgencyCriticalBkColor -ucf $urgencyCriticalFgColor
+      (dunst 2>/dev/null &)
+    else
+      echo "[Warning] Not implemented yet, please use 'auto' or 'manual' on theme.config "
+    fi
+  fi
+
+  ### wallpaper updating section
+  if [ "$wallpapperTheme" ]; then
+    # check if wallpaper file exists
+    if [[ -e "$themesDir/$applyTheme/$wallpapperTheme" ]]; then
+      # check if there is a main.conf and a theme.conf
+      if [[ -e "$i3wmMainConfigFile" && -e "$i3wmThemeConfigFile" && -e "$i3wmConfigFile"  ]]; then
+        # sets new wallpaper with feh
+        feh --bg-scale "$themesDir/$applyTheme/$wallpapperTheme"
+        # change i3 main.conf so next login the wallpaper and lockscreen are correct
+        sed -i '/set $wallpaper/cset $wallpaper "'"$themesDir/$applyTheme/$wallpapperTheme"'"' $i3wmMainConfigFile
+        sed -i '/set $wallpaper/cset $wallpaper "'"$themesDir/$applyTheme/$wallpapperTheme"'"' $i3wmConfigFile
+      else
+        echo "[Warning] walpaper not configurated: i3 main.conf or/and theme.conf does not exist, ignoring... "
+      fi
+    else
+      echo "[Warning] wallpaper file '$wallpapperTheme' not found, ignoring... "
+    fi
+  else
+    echo "[Warning] wallpaper value is empty, ignoring..."
+  fi
+
+  ### i3 updating section
+  if [ "$i3wmThemeName" ]; then
+    # check if wallpaper file exists
+    if [[ -e "$themesDir/$applyTheme/$i3wmThemeName" ]]; then
+      # check if there is a main.conf and a theme.conf
+      if [[ -e "$i3wmMainConfigFile" && -e "$i3wmThemeConfigFile"  ]]; then
+        # copy i3 theme file to i3 config.d dir
+        cp -f "$themesDir/$applyTheme/$i3wmThemeName" $i3wmThemeConfigFile
+        # removes old config
+        if [[ -f "$i3wmConfigFile" ]]; then rm $i3wmConfigFile; fi
+        # 'glues' main.conf and theme.conf into config
+        cat $i3wmMainConfigFile $i3wmThemeConfigFile > $i3wmConfigFile
+        # restart i3 to get the new theme
+        #i3-msg restart 1>/dev/null
+      else
+        echo "[Warning] i3wm theme not configurated: i3 main.conf or/and theme.conf does not exist, ignoring... "
+      fi
+    else
+      echo "[Warning] i3 theme file '$i3wmThemeName' not found, ignoring... "
+    fi
+  else
+    echo "[Warning] i3 theme value is empty, ignoring..."
+  fi
+
+  ### i3status updating section
+  if [ "$i3statusThemeName" ]; then
+    # check if wallpaper file exists
+    if [[ -e "$themesDir/$applyTheme/$i3statusThemeName" ]]; then
+      # check if there is a main.conf and a theme.conf
+      if [[ -e "$i3statusMainConfigFile" && -e "$i3statusThemeConfigFile"  ]]; then
+        # copy i3 theme file to i3 config.d dir
+        cp -f "$themesDir/$applyTheme/$i3statusThemeName" $i3statusThemeConfigFile
+        # removes old config
+        if [[ -f "$i3statusConfigFile" ]]; then rm $i3statusConfigFile; fi
+        # 'glues' main.conf and theme.conf into config
+        cat $i3statusThemeConfigFile $i3statusMainConfigFile > $i3statusConfigFile
+        # restart i3 to get the new theme
+        i3-msg restart 1>/dev/null
+      else
+        echo "[Warning] i3status theme not configurated: i3status main.conf or/and theme.conf does not exist, #ignoring... "
+      fi
+    else
+      echo "[Warning] i3status theme file '$i3statusThemeName' not found, ignoring... "
+    fi
+  else
+    echo "[Warning] i3status theme value is empty, ignoring..."
+  fi
+
+
+  echo "Done."
+fi
+
+exit 0
