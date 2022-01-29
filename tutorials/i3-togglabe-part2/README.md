@@ -35,7 +35,7 @@ So without further ado, let's begin!
 
 # Beefing up our script
 
-Note: I will only put here some snippets of the code, so its more clear and we dont get a wall of code. All the code from the script is commented. I will only explain what I think is not super straight foward.
+>Note: I will only put here some snippets of the code, so its more clear and we dont get a wall of code. All the code from the script is commented. I will only explain what I think is not super straight foward.
 
 ## Add flags
 The 1st thing that I like to do in my scripts is allowing for flags. It adds more flexabillity to the user and we can, for example, add a help text which is *very* useful.
@@ -76,7 +76,8 @@ fi
 ```
 Letś break it down.
 
-- ```for pkg in ${dependencies[@]}; do``` This check for the dependencies that our script needs. Note: This only works on Arch by the way. If using other distro, remove it or change it to something that check for packages installed by your package manager. If you remove it, please make sure you have all the packages installed before running!
+- ```for pkg in ${dependencies[@]}; do``` This check for the dependencies that our script needs.
+> This only works on Arch by the way. If you are using another distro, remove it or change it to something that check for packages installed by the package manager. If you remove it, please make sure you have all the packages installed before running!
 
 - ```function printHelp``` its a simple [HERE](https://en.wikipedia.org/wiki/Here_document) funcion from ```bash```.
 
