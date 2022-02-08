@@ -61,6 +61,27 @@ Examples
 HELPME
 }
 
+# color support, thanks https://gist.github.com/elucify/c7ccfee9f13b42f11f81
+RESTORE=$(echo -en '\033[0m')
+RED=$(echo -en '\033[00;31m')
+GREEN=$(echo -en '\033[00;32m')
+YELLOW=$(echo -en '\033[00;33m')
+BLUE=$(echo -en '\033[00;34m')
+MAGENTA=$(echo -en '\033[00;35m')
+PURPLE=$(echo -en '\033[00;35m')
+CYAN=$(echo -en '\033[00;36m')
+LIGHTGRAY=$(echo -en '\033[00;37m')
+LRED=$(echo -en '\033[01;31m')
+LGREEN=$(echo -en '\033[01;32m')
+LYELLOW=$(echo -en '\033[01;33m')
+LBLUE=$(echo -en '\033[01;34m')
+LMAGENTA=$(echo -en '\033[01;35m')
+LPURPLE=$(echo -en '\033[01;35m')
+LCYAN=$(echo -en '\033[01;36m')
+WHITE=$(echo -en '\033[01;37m')
+BOLD=$(echo -en '\033[1m')
+UNDERLINE=$(echo -en '\033[4')
+
 # exit code function
 # exit the script with a custom exit code
 # exitCode code_error verbose text_to_show
@@ -85,7 +106,7 @@ exitCode() {
     if [[ "$1" == "$i" ]]; then
       # checks if verbose flag is active, if so echo the error description
       if [[ "$2" == "1" ]]; then
-        echo ${exitCodeList[${i}]}
+        echo ${BOLD}${exitCodeList[${i}]}${RESTORE}
       fi
       # calculates script runtime
       local startTime=$(date --date "${PROGSTARTTIME}" -u +%s)
@@ -122,19 +143,19 @@ logMe() {
   # log type : info
   if [[ "$1" == "0" ]]; then
     if [[ "$LOGTOFILE" == 1 ]]; then echo -e "[Info]: $2" >> $PROGLOG ; fi
-    if [[ "$3" == "1" ]]; then echo -e "[Info]: $2" ; fi
+    if [[ "$3" == "1" ]]; then echo -e "${BLUE}[Info]: $2${RESTORE}" ; fi
   fi
 
   # log type : error
   if [[ "$1" == "1" ]]; then
     if [[ "$LOGTOFILE" == 1 ]]; then echo -e "[ERROR]: $2" >> $PROGLOG ; fi
-    if [[ "$3" == "1" ]]; then echo -e "[ERROR]: $2" ; fi
+    if [[ "$3" == "1" ]]; then echo -e "${RED}[ERROR]: $2${RESTORE}" ; fi
   fi
 
   # log type : warning
   if [[ "$1" == "2" ]]; then
     if [[ "$LOGTOFILE" == 1 ]]; then echo -e "[Warning]: $2" >> $PROGLOG ; fi
-    if [[ "$3" == "1" ]]; then echo -e "[Warning]: $2" ; fi
+    if [[ "$3" == "1" ]]; then echo -e "${YELLOW}[Warning]: $2${RESTORE}" ; fi
   fi
 
   # log type : freehand
@@ -215,6 +236,7 @@ while [[ $# -gt 0 ]]; do
 
     # if the next char is '-' then we got a long option
     if [ "$detectDoubleArgChar" = - ]; then
+
       # key is current_argument_string - 2 char , ie '--help' turns 'help'
       key=${currentArgOptions:2}
       # compares if the currentArgOptions is the character from the case
@@ -245,8 +267,10 @@ while [[ $# -gt 0 ]]; do
       shift
     # if the char is not '-' then it's a short argument
     else
+
       # gets number of arguments
       totalCharString=(${#currentArgOptions})
+
       # start on '1' because its always '-'
       for ((i = 1 ; i < $totalCharString  ; i++)); do
         # the current argument is: current_argument_string - postion_on_argument_string - 1
@@ -282,6 +306,8 @@ while [[ $# -gt 0 ]]; do
           *) exitCode 4 1 "${key}";;
         esac
       done
+      #shifts to the next argument
+      shift
     fi
   fi
 done
@@ -290,6 +316,7 @@ main() {
 
   # log start of the script
   logMe "Start at $(date --date "${PROGSTARTTIME}" +"%Y/%m/%d %H:%M:%S")"
+  logMe 0 "i3theme started" 1
 
   # check if all dependencies necessary are installed
   checkDependencies
@@ -340,17 +367,18 @@ main() {
   # list themes flag
   # list all the themes avaiable
   if [ "$listThemesF" ]; then
-    logMe "Avaiable themes flag used"
-    echo "Themes available:"
+    logMe 0 "Themes available" 1
     #checks for theme.config within themes folder
     for currentThemeDir in $themesDir/*
     do
       # checks if theme.config file exist and verifies if its a valid JSON file
       if [[ -e $currentThemeDir/theme.config ]]; then
         if verifyJSON "$currentThemeDir/theme.config"; then
-          echo "--> $(basename $currentThemeDir)"
+          printf "%-16s %-4s \e[32m%-16s\e[0m\n" "$(basename $currentThemeDir)" "-->" "OK"
+          #echo "${GREEN}-->${RESTORE} $(basename $currentThemeDir)"
         else
-          echo "--> Invalid JSON: $(basename $currentThemeDir)"
+          printf "%-16s %-4s \e[31m%-16s\e[0m\n" "$(basename $currentThemeDir)" "-->" "Invalid JSON"
+          #echo "${RED}--> Invalid JSON:${RESTORE} $(basename $currentThemeDir)"
         fi
       fi
     done
@@ -443,7 +471,8 @@ main() {
   fi
 
   # if script reachs here, then it went without any errors, nice.
-  exitCode 0 1
+  logMe 0 "Complete." 1
+  exitCode 0
 }
 
 # checks if JSON files is valid
@@ -459,7 +488,8 @@ function verifyJSON() {
 # apply gtk function
 applyGTKThemeFunction() {
   logMe "GTK theme --> $applyGTKTheme"
-  printf "%-4s %-4s %-16s\n" "GTK" "-->" "$applyGTKTheme"
+  # printf with green color
+  printf "\e[32m%-16s %-4s\e[0m %-16s\n" "GTK" "-->" "$applyGTKTheme"
   #printf "%-4s %-32s %-128s\n" "[$i]" "$name" "$description"
 
   # get theme.config into a variable
@@ -531,7 +561,8 @@ applyGTKThemeFunction() {
 # apply qt function
 applyQtThemeFunction() {
   logMe "Qt theme --> $applyGTKTheme"
-  printf "%-4s %-4s %-16s\n" "Qt" "-->" "$applyQtTheme"
+  # printf with green color
+  printf "\e[32m%-16s %-4s\e[0m %-16s\n" "Qt" "-->" "$applyQtTheme"
   # get theme.config into a variable
   themeJSON=$(cat $themesDir/$1/theme.config)
 
@@ -565,7 +596,8 @@ applyQtThemeFunction() {
 # apply i3 function
 applyI3ThemeFunction() {
   logMe "i3 theme --> $applyI3Theme"
-  printf "%-4s %-4s %-16s\n" "i3" "-->" "$applyI3Theme"
+  # printf with green color
+  printf "\e[32m%-16s %-4s\e[0m %-16s\n" "i3" "-->" "$applyI3Theme"
 
   # get theme.config into a variable
   themeJSON=$(cat $themesDir/$1/theme.config)
@@ -630,7 +662,8 @@ applyI3ThemeFunction() {
 applyDunstThemeFunction() {
 
   logMe "dunst theme --> $applyDunstTheme"
-  printf "%-4s %-4s %-16s\n" "dunst" "-->" "$applyDunstTheme"
+  # printf with green color
+  printf "\e[32m%-16s %-4s\e[0m %-16s\n" "dunst" "-->" "$applyDunstTheme"
 
   # get theme.config into a variable
   themeJSON=$(cat $themesDir/$1/theme.config)
@@ -638,7 +671,7 @@ applyDunstThemeFunction() {
   applyTheme=$1
 
   # dunst theme value from JSON
-  dunstThemeName=$( echo $themeJSON | jq -r '.dunst["dunst-theme"]' )
+  dunstThemeName=$( echo $themeJSON | jq --raw-output '.dunst["dunst-theme"]' )
 
   if [[ "$dunstThemeName" ]]; then
     if [[ "$dunstThemeName" == "auto" ]]; then
@@ -658,29 +691,29 @@ applyDunstThemeFunction() {
     elif [[ "$dunstThemeName" == "manual" ]]; then
       # if set to manual, get values from JSON
       # if JSON value is 'null' gets default color from dunst default theme file
-      frameColor=$( echo $themeJSON | jq -r '.dunst["frameColor"]' )
-      if [[ "$frameColor" == "null" ]]; then frameColor="#aaaaaa"; echo "[Warning] 'frameColor' is empty, getting default color..."; fi
+      frameColor=$( echo $themeJSON | jq --raw-output '.dunst["frameColor"]' )
+      if [[ "$frameColor" == "null" ]]; then frameColor="#aaaaaa"; logMe 2 "'frameColor' is empty, getting default color..." 1 ; fi
 
-      frameWidth=$( echo $themeJSON | jq -r '.dunst["frameWidth"]' )
-      if [[ "$frameWidth" == "null" ]]; then frameWidth="3"; echo "[Warning] 'frameWidth' is empty, getting default color..."; fi
+      frameWidth=$( echo $themeJSON | jq --raw-output '.dunst["frameWidth"]' )
+      if [[ "$frameWidth" == "null" ]]; then frameWidth="3"; logMe 2 "'frameWidth' is empty, getting default color..." 1 ; fi
 
-      urgencyLowBkColor=$( echo $themeJSON | jq -r '.dunst["urgencyLow-BackgroundColor"]' )
-      if [[ "$urgencyLowBkColor" == "null" ]]; then urgencyLowBkColor="#222222"; echo "[Warning] 'urgencyLow-BackgroundColor' is empty, getting default color..."; fi
+      urgencyLowBkColor=$( echo $themeJSON | jq --raw-output '.dunst["urgencyLow-BackgroundColor"]' )
+      if [[ "$urgencyLowBkColor" == "null" ]]; then urgencyLowBkColor="#222222"; logMe 2 "'urgencyLow-BackgroundColor' is empty, getting default color..." 1 ; fi
 
-      urgencyLowFgColor=$( echo $themeJSON | jq -r '.dunst["urgencyLow-ForegroundColor"]' )
-      if [[  "$urgencyLowFgColor" == "null" ]]; then urgencyLowFgColor="#888888"; echo "[Warning] 'urgencyLow-ForegroundColor' is empty, getting default color..."; fi
+      urgencyLowFgColor=$( echo $themeJSON | jq --raw-output '.dunst["urgencyLow-ForegroundColor"]' )
+      if [[  "$urgencyLowFgColor" == "null" ]]; then urgencyLowFgColor="#888888"; logMe 2 "'urgencyLow-ForegroundColor' is empty, getting default color..." 1 ; fi
 
-      urgencyNormalBkColor=$( echo $themeJSON | jq -r '.dunst["urgencyNormal-BackgroundColor"]' )
-      if [[ "$urgencyNormalBkColor" == "null" ]]; then urgencyNormalBkColor="#285577"; echo "[Warning] 'urgencyNormal-BackgroundColor' is empty, getting default color..."; fi
+      urgencyNormalBkColor=$( echo $themeJSON | jq --raw-output '.dunst["urgencyNormal-BackgroundColor"]' )
+      if [[ "$urgencyNormalBkColor" == "null" ]]; then urgencyNormalBkColor="#285577"; logMe 2 "'urgencyNormal-BackgroundColor' is empty, getting default color..." 1 ; fi
 
-      urgencyNormalFgColor=$( echo $themeJSON | jq -r '.dunst["urgencyNormal-ForegroundColor"]' )
-      if [[ "$urgencyNormalFgColor" == "null" ]]; then urgencyNormalFgColor="#ffffff"; echo "[Warning] 'urgencyNormal-ForegroundColor' is empty, getting default color..."; fi
+      urgencyNormalFgColor=$( echo $themeJSON | jq --raw-output '.dunst["urgencyNormal-ForegroundColor"]' )
+      if [[ "$urgencyNormalFgColor" == "null" ]]; then urgencyNormalFgColor="#ffffff"; logMe 2 "'urgencyNormal-ForegroundColor' is empty, getting default color..." 1 ; fi
 
-      urgencyCriticalBkColor=$( echo $themeJSON | jq -r '.dunst["urgencyCritical-BackgroundColor"]' )
-      if [[ "$urgencyCriticalBkColor" == "null" ]]; then urgencyCriticalBkColor="#900000"; echo "[Warning] 'urgencyCritical-BackgroundColor' is empty, getting default color..."; fi
+      urgencyCriticalBkColor=$( echo $themeJSON | jq --raw-output '.dunst["urgencyCritical-BackgroundColor"]' )
+      if [[ "$urgencyCriticalBkColor" == "null" ]]; then urgencyCriticalBkColor="#900000"; logMe 2 "'urgencyCritical-BackgroundColor' is empty, getting default color..." 1 ; fi
 
-      urgencyCriticalFgColor=$( echo $themeJSON | jq -r '.dunst["urgencyCritical-ForegroundColor"]' )
-      if [[ "$urgencyCriticalFgColor" == "null" ]]; then urgencyCriticalFgColor="#ffffff"; echo "[Warning] 'urgencyCritical-ForegroundColor' is empty, getting default color..."; fi
+      urgencyCriticalFgColor=$( echo $themeJSON | jq --raw-output '.dunst["urgencyCritical-ForegroundColor"]' )
+      if [[ "$urgencyCriticalFgColor" == "null" ]]; then urgencyCriticalFgColor="#ffffff"; logMe 2 "'urgencyCritical-ForegroundColor' is empty, getting default color..." 1 ; fi
 
       # kills dunst, regen the config with new colors and runs it again
       killall dunst
@@ -693,7 +726,7 @@ applyDunstThemeFunction() {
       # check if dunstrc file exists
       if [[ -e "$themesDir/$applyTheme/$dunstThemeName" ]]; then
         # copy dunst theme file to dunst config dir
-        cp -f "$themesDir/$applyTheme/$dunstThemeName" $dunstConfigFile
+        cp --force "$themesDir/$applyTheme/$dunstThemeName" $dunstConfigFile
         (dunst 2>/dev/null &)
       else
         logMe 2 "dunst theme file '$dunstThemeName' not found, ignoring..." 1
@@ -707,7 +740,8 @@ applyDunstThemeFunction() {
 applyKittyThemeFunction() {
 
   logMe "kitty theme --> $applyKittyTheme"
-  printf "%-4s %-4s %-16s\n" "kitty" "-->" "$applyKittyTheme"
+  # printf with green color
+  printf "\e[32m%-16s %-4s\e[0m %-16s\n" "kitty" "-->" "$applyKittyTheme"
 
   # get theme.config into a variable
   themeJSON=$(cat $themesDir/$1/theme.config)
@@ -715,14 +749,14 @@ applyKittyThemeFunction() {
   applyTheme=$1
 
   # kitty theme value from JSON
-  kittyThemeName=$( echo $themeJSON | jq -r '.["kitty"]' )
+  kittyThemeName=$( echo $themeJSON | jq --raw-output '.["kitty"]' )
 
   ### kitty updating section
   if [ "$kittyThemeName" ]; then
     # check if file exists
     if [[ -e "$themesDir/$applyTheme/$kittyThemeName" ]]; then
       # copies kitty theme config
-      cp -f "$themesDir/$applyTheme/$kittyThemeName" $kittyThemeFile
+      cp --force "$themesDir/$applyTheme/$kittyThemeName" $kittyThemeFile
       # on the fly reload all kitty terminals
       killall -SIGUSR1 kitty
     else
@@ -737,7 +771,8 @@ applyKittyThemeFunction() {
 applyXresourcesThemeFunction() {
 
   logMe "Xresources theme --> $applyXresourcesTheme"
-  printf "%-4s %-4s %-16s\n" "Xresources" "-->" "$applyXresourcesTheme"
+  # printf with green color
+  printf "\e[32m%-16s %-4s\e[0m %-16s\n" "Xresources" "-->" "$applyXresourcesTheme"
 
   # get theme.config into a variable
   themeJSON=$(cat $themesDir/$1/theme.config)
@@ -745,12 +780,12 @@ applyXresourcesThemeFunction() {
   applyTheme=$1
 
   # xresources value from JSON
-  xresourcesThemeName=$( echo $themeJSON | jq -r '.["xresources"]' )
+  xresourcesThemeName=$( echo $themeJSON | jq --raw-output '.["xresources"]' )
 
   if [ "$xresourcesThemeName" ]; then
     # check if file exists
     if [[ -e "$themesDir/$applyTheme/$xresourcesThemeName" ]]; then
-      cp -f "$themesDir/$applyTheme/$xresourcesThemeName" $xresourcesThemeFile
+      cp --force "$themesDir/$applyTheme/$xresourcesThemeName" $xresourcesThemeFile
       # reload Xresources
       xrdb ~/.Xresources
     else
@@ -765,7 +800,8 @@ applyWallpaperThemeFunction() {
 
 
   logMe "wallpaper theme --> $applyWallpaperTheme"
-  printf "%-4s %-4s %-16s\n" "wallpaper" "-->" "$applyWallpaperTheme"
+  # printf with green color
+  printf "\e[32m%-16s %-4s\e[0m %-16s\n" "wallpaper" "-->" "$applyWallpaperTheme"
 
   # get theme.config into a variable
   themeJSON=$(cat $themesDir/$1/theme.config)
@@ -773,7 +809,7 @@ applyWallpaperThemeFunction() {
   applyTheme=$1
 
   # wallpaper value from JSON
-  wallpapperThemeName=$( echo $themeJSON | jq -r '.["wallpaper"]' )
+  wallpapperThemeName=$( echo $themeJSON | jq --raw-output '.["wallpaper"]' )
 
   if [ "$wallpapperThemeName" ]; then
     # check if wallpaper file exists
@@ -783,8 +819,8 @@ applyWallpaperThemeFunction() {
         # sets new wallpaper with feh
         feh --bg-scale "$themesDir/$applyTheme/$wallpapperThemeName"
         # change i3 main.conf so next login the wallpaper and lockscreen are correct
-        sed -i '/set $wallpaper/cset $wallpaper "'"$themesDir/$applyTheme/$wallpapperThemeName"'"' $i3wmMainConfigFile
-        sed -i '/set $wallpaper/cset $wallpaper "'"$themesDir/$applyTheme/$wallpapperThemeName"'"' $i3wmConfigFile
+        sed --in-place '/set $wallpaper/cset $wallpaper "'"$themesDir/$applyTheme/$wallpapperThemeName"'"' $i3wmMainConfigFile
+        sed --in-place '/set $wallpaper/cset $wallpaper "'"$themesDir/$applyTheme/$wallpapperThemeName"'"' $i3wmConfigFile
       else
         logMe 2 "walpaper not configurated: i3 main.conf or/and theme.conf does not exist, ignoring..." 1
       fi
